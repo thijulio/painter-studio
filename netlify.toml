@@ -1,6 +1,7 @@
 # Netlify — Painter Studio
+# Requer env var NODE_AUTH_TOKEN (GitHub PAT com `read:packages`) p/ instalar @thijulio/biome-tokens.
 [build]
-  command = "pnpm install --no-frozen-lockfile && pnpm --filter @painter-studio/mobile build"
+  command = "pnpm install --frozen-lockfile && pnpm --filter @painter-studio/mobile build"
   publish = "apps/mobile/dist"
 
 [build.environment]
