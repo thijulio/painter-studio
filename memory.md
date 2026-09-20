@@ -8,6 +8,7 @@
 - **Base pronta (Fase 0):** Nx 23 + Expo SDK 57 + design system Biome + AI Toolbox + tema (cores) conectado.
 - **Roda:** typecheck ✅ · build web ✅ · dev server ✅ (http://localhost:8081).
 - **PARADO em:** deploy no Netlify — **ação manual do dono** (sem acesso à conta Netlify).
+- **Deploy verificado (2026-09-20):** `gh auth token` lê o GitHub Packages (HTTP 200 p/ `@thijulio/biome-tokens`) → `NODE_AUTH_TOKEN` vai funcionar no build do Netlify. Comando do `netlify.toml` (`pnpm --filter @painter-studio/mobile build` → `expo export --platform web`) gera `apps/mobile/dist/index.html` corretamente. Único bloqueio real: acesso à conta Netlify (sem `netlify` CLI nem credenciais no ambiente).
 
 ## ⏭️ Próximo passo imediato (ação do dono)
 
