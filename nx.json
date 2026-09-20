@@ -1,0 +1,44 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "namedInputs": {
+    "default": [
+      "{projectRoot}/**/*",
+      "sharedGlobals"
+    ],
+    "production": [
+      "default",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)"
+    ],
+    "sharedGlobals": [
+      "{workspaceRoot}/tsconfig.base.json"
+    ]
+  },
+  "plugins": [
+    {
+      "plugin": "@nx/expo/plugin",
+      "options": {
+        "startTargetName": "start",
+        "exportTargetName": "export",
+        "prebuildTargetName": "prebuild"
+      }
+    },
+    {
+      "plugin": "@nx/js/typescript",
+      "options": {
+        "typecheck": {
+          "targetName": "typecheck"
+        }
+      }
+    }
+  ],
+  "targetDefaults": {
+    "export": {
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": true
+    }
+  },
+  "defaultBase": "main",
+  "analytics": false
+}

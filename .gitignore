@@ -1,0 +1,30 @@
+# Dependências
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+.expo/
+web-build/
+.nx/
+.nx/cache/
+.nx/workspace-data/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Netlify
+.netlify/
+
+# AI Toolbox (gerado pelo install do plugin)
+.agent-toolbox/installed/
+
+# Sistema / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log

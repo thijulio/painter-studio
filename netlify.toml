@@ -1,0 +1,11 @@
+# Netlify — Painter Studio
+[build]
+  command = "pnpm install --no-frozen-lockfile && pnpm --filter @painter-studio/mobile build"
+  publish = "apps/mobile/dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+[functions]
+  directory = "functions"
+  node_bundler = "esbuild"

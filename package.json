@@ -1,0 +1,28 @@
+{
+  "name": "painter-studio",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.25.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "nx run-many -t start",
+    "dev:mobile": "pnpm --filter @painter-studio/mobile start",
+    "dev:web": "pnpm --filter @painter-studio/mobile web",
+    "build": "nx run-many -t export",
+    "lint": "pnpm --filter @painter-studio/mobile lint",
+    "typecheck": "nx run-many -t typecheck",
+    "graph": "nx graph",
+    "functions:dev": "netlify dev"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@parcel/watcher", "nx", "unrs-resolver"]
+  },
+  "devDependencies": {
+    "nx": "23.2.1",
+    "@nx/expo": "23.2.1",
+    "@nx/js": "23.2.1",
+    "@nx/workspace": "23.2.1"
+  }
+}
