@@ -8,6 +8,8 @@
 - Plano, arquitetura, benchmark e spec em `docs/`.
 - Decidido: design system **Biome Modernism** (tokens) + AI Toolbox (**governance-core**).
 - Tooling: Node 24 + pnpm 10 + **Nx 23** (padrão PMP/design-systems); monorepo com `apps/` + `libs/` + `functions/`.
+- **Repo GitHub:** https://github.com/thijulio/painter-studio (privado) — commit inicial `5741282` pushado.
+- **Roda:** `expo export --platform web` (build) passa → gera `apps/mobile/dist/`.
 
 ## Status dos pacotes @thijulio (verificado)
 
@@ -25,10 +27,11 @@
 - `@thijulio/governance-core` v0.1.0 é o único plugin do AI Toolbox (`agents/`, `skills/`,
   `references/` no repo ainda vazios).
 
-## Próximos passos
+## Próximos passos (prioridade: rodar → depois complexificar)
 
-1. Validar stack + nome com o dono.
-2. ✅ `pnpm install` feito; rodar `pnpm dev:web` para ver o app com as cores Biome.
-3. ✅ Conectar o tema aos tokens Biome (adapter `src/theme/tokens.ts` + `src/constants/theme.ts`).
-4. Instalar `@thijulio/governance-core` no projeto (`.agent-toolbox/`).
-5. Começar Fase 1 (auth Google + upload S3).
+1. ✅ Commit inicial + repo no GitHub (thijulio/painter-studio).
+2. ✅ Build web passa (`expo export --platform web`).
+3. ⏭️ Rodar `pnpm dev:web` e ver no browser (dev server).
+4. ⏭️ Deploy no Netlify (`netlify.toml` já pronto).
+5. ⏭️ Instalar `@thijulio/governance-core` (`.agent-toolbox/`).
+6. ⏳ DEPOIS (complexificar): Fase 1 — auth Google + upload S3.
