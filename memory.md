@@ -1,4 +1,21 @@
-# Painter Studio — Memória (estado vivo)
+# Painter Studio — Memória / Handover
+
+> Para retomar: leia isto + `AGENTS.md` + `docs/plan.md`.
+
+## 🚀 Handover — onde paramos
+
+- **Repo:** https://github.com/thijulio/painter-studio (privado, `main`, tudo commitado/pushado).
+- **Base pronta (Fase 0):** Nx 23 + Expo SDK 57 + design system Biome + AI Toolbox + tema (cores) conectado.
+- **Roda:** typecheck ✅ · build web ✅ · dev server ✅ (http://localhost:8081).
+- **PARADO em:** deploy no Netlify — **ação manual do dono** (sem acesso à conta Netlify).
+
+## ⏭️ Próximo passo imediato (ação do dono)
+
+1. Netlify → "Add new site → Import an existing project" → GitHub → `thijulio/painter-studio`.
+2. *Site settings → Environment variables* → adicionar `NODE_AUTH_TOKEN` = saída de `gh auth token`.
+3. Deploy. Guia completo: `docs/deploy-netlify.md`.
+
+Depois: domínio custom `*.thijulio.com` (CNAME no Route53) → só então complexificar (Fase 1: auth Google + S3).
 
 ## Estado atual
 
@@ -31,7 +48,8 @@
 
 1. ✅ Commit inicial + repo no GitHub (thijulio/painter-studio).
 2. ✅ Build web passa (`expo export --platform web`).
-3. ⏭️ Rodar `pnpm dev:web` e ver no browser (dev server).
-4. ⏭️ Deploy no Netlify (`netlify.toml` já pronto).
-5. ⏭️ Instalar `@thijulio/governance-core` (`.agent-toolbox/`).
-6. ⏳ DEPOIS (complexificar): Fase 1 — auth Google + upload S3.
+3. ✅ Dev server roda (http://localhost:8081) e tema Biome aplicado.
+4. ⏭️ **Deploy no Netlify** — ação do dono (ver Handover acima + `docs/deploy-netlify.md`).
+5. ⏭️ Domínio custom `*.thijulio.com` (CNAME no Route53).
+6. ⏭️ Instalar `@thijulio/governance-core` (`.agent-toolbox/`).
+7. ⏳ DEPOIS (complexificar): Fase 1 — auth Google + upload S3.
