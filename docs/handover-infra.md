@@ -25,14 +25,15 @@ Criar e configurar os serviços abaixo e deixar o projeto pronto para:
 - **Repo:** `https://github.com/thijulio/painter-studio` (privado, branch `main`).
 - **Stack (travada, não reabrir sem ADR):** Expo SDK 57 (React 19, RN 0.86, TS 6) +
   Expo Router · Nx 23 · pnpm 10 · Node 24 · Netlify (host + functions + Identity) ·
-  **Postgres** (provider a decidir pelo Codex — reutilizar a estrutura do
-  smart-library, §4.2.1) · **AWS S3** (imagens).
+  **Neon Postgres** · **AWS S3** (imagens).
 - **Design system:** `@thijulio/biome-tokens` (GitHub Packages, repo
   `thijulio/design-systems`). **AI Toolbox:** `@thijulio/governance-core`
   (repo `thijulio/thijulio-ai-toolbox`).
 - **Estado atual:** Fase 0 concluída — scaffold, `pnpm typecheck` ✅, build web ✅
   (`apps/mobile/dist`), dev server ✅ (http://localhost:8081), tema Biome conectado.
-- **PARADO em:** deploy no Netlify (falta acesso à conta Netlify do dono).
+- **Infra provisionada em 2026-09-26:** Netlify, Neon e S3 estão configurados;
+  Netlify Identity usa o provider Google padrão. O wiring no app Expo continua
+  sendo trabalho da Fase 1.
 
 ---
 
@@ -58,11 +59,11 @@ Criar e configurar os serviços abaixo e deixar o projeto pronto para:
 | Serviço | Estado | Ação principal |
 | --- | --- | --- |
 | GitHub (repo `thijulio/painter-studio`) | ✅ já existe (privado, `main`, pushado) | validar PAT `read:packages` (§4.5) |
-| Netlify (host + functions + Identity) | ⚠️ criar site | conectar repo + env + deploy (§4.1) |
-| Banco Postgres (Supabase/Neon) | ⚠️ criar projeto | Codex escolhe provider + schema smart-library (§4.2) |
-| AWS S3 (imagens) | ⚠️ criar bucket + IAM | bucket privado + CORS/lifecycle (§4.3) |
-| Google Cloud (OAuth) | ⚠️ criar projeto + client | OAuth client p/ login Google (§4.4) |
-| AWS Route53 (DNS) | ⚠️ configurar CNAME | domínio `*.thijulio.com` → Netlify (§4.6) |
+| Netlify (host + functions + Identity) | ✅ configurado | deploy + Identity Google padrão (§4.1) |
+| Banco Postgres (Neon) | ✅ configurado | schema inicial aplicado (§4.2) |
+| AWS S3 (imagens) | ✅ configurado | bucket privado + IAM + CORS/lifecycle (§4.3) |
+| Google Cloud (OAuth) | ✅ projeto/consentimento | provider padrão do Netlify dispensa client próprio (§4.4) |
+| AWS Route53 (DNS) | ✅ configurado | `painter-studio.thijulio.com` → Netlify + HTTPS (§4.6) |
 
 ---
 
@@ -81,18 +82,16 @@ Criar e configurar os serviços abaixo e deixar o projeto pronto para:
   4. Habilitar **Netlify Identity** e adicionar o **provider Google** (item 4.4).
 
 ### 4.2 Base de dados — provider decidido pelo Codex; estrutura do smart-library
-- **Provider: decisão do Codex.** Postgres é o denominador comum (Supabase e Neon
-  são Postgres e suportam pgvector/pg_trgm). Codex escolhe e justifica o provider.
+- **Provider: Neon.** A decisão e sua justificativa estão em
+  `docs/decisions/0009-neon-postgres.md`.
 - **Estrutura: reutilizar o padrão do Thiago Smart Library** (§4.2.1) — Postgres +
   pgvector, IDs surrogate + `stable_id`, junções N:M, event log append-only, cache
   derivado, audit de importação, proveniência por campo e colunas de ciclo de vida.
   Adaptar as *tabelas* ao domínio do Painter Studio (tintas, paletas, misturas,
   imagens, tamanhos de tela) — **não** copiar as tabelas de livros do smart-library.
-- **A fazer:** criar o projeto/BD no provider escolhido; escrever schema/migrations
-  em `infra/database/` seguindo as convenções do smart-library; guardar as
-  credenciais de conexão (connection string no Neon, ou `SUPABASE_URL`/keys no Supabase).
-- **Se o provider não for Supabase:** atualizar `docs/decisions/` (ADR) e
-  `docs/architecture.md`/`docs/plan.md` para refletir a nova decisão.
+- **Concluído:** o projeto Neon tem a migration inicial aplicada. A conexão pooled
+  está guardada somente como `DATABASE_URL` secreto no Netlify; schema e ADR estão
+  versionados em `infra/database/` e `docs/decisions/0009-neon-postgres.md`.
 
 ### 4.2.1 Estrutura de referência — Thiago Smart Library
 Projeto de referência (mesmo dono, mesmas convenções):
@@ -120,15 +119,22 @@ Convenções a reutilizar (resumo do contrato):
 ### 4.3 AWS S3 — armazenamento de imagens
 - **Papel:** guardar fotos do usuário; upload via **URL pré-assinada** gerada por
   `functions/storage` (o cliente faz PUT direto no S3, sem passar pelo servidor).
-- **A fazer:** bucket **privado** (com lifecycle + CORS); IAM user com política
-  mínima (`s3:PutObject`/`s3:GetObject` só no bucket); gerar
-  `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`. Região default `us-east-1`.
+- **Concluído:** bucket privado em Paris (`eu-west-3`) com bloqueio público,
+  ACLs desativadas, SSE-S3, CORS para produção/local e aborto de multipart uploads
+  incompletos após 7 dias. O usuário IAM só tem `s3:PutObject`/`s3:GetObject`
+  no bucket. A configuração versionada sem segredos está em `infra/s3/`.
+- **Nota Netlify:** a plataforma reserva nomes `AWS_*`; os segredos são
+  `S3_ACCESS_KEY_ID` e `S3_SECRET_ACCESS_KEY` e a função de storage deverá
+  mapeá-los explicitamente para o cliente AWS SDK.
 
 ### 4.4 Google Cloud — OAuth para login Google
-- **Papel:** fornecer o OAuth client que o Netlify Identity usa para o login Google.
-- **A fazer:** projeto GCP → tela de consentimento OAuth → credencial OAuth (web) →
-  `NETLIFY_GOOGLE_CLIENT_ID` / `NETLIFY_GOOGLE_CLIENT_SECRET` → configurar o
-  provider Google no painel Netlify Identity (redirect URI do site Netlify).
+- **Concluído:** o projeto GCP `painter-studio-509817` e a tela de consentimento
+  foram criados. O Netlify Identity está habilitado com o provider Google padrão.
+  Isto permite login Google sem segredo no projeto, mas exibe **Netlify Identity**
+  como app de consentimento.
+- **Limite de plano:** credenciais OAuth próprias (branding “Painter Studio”)
+  exigem Identity Pro. Não criar um client OAuth nem variáveis de segredo enquanto
+  esse upgrade não for uma decisão explícita.
 
 ### 4.5 GitHub — repo já criado (não criar outro)
 - **Repo já existe:** `https://github.com/thijulio/painter-studio` (privado,
@@ -153,21 +159,18 @@ Convenções a reutilizar (resumo do contrato):
 | Variável | Onde vai | Origem |
 | --- | --- | --- |
 | `NODE_AUTH_TOKEN` | Netlify site env (build) | GitHub PAT `read:packages` |
-| `VITE_NETLIFY_SITE_ID` | Netlify site env + `.env` local | Netlify site |
-| `VITE_NETLIFY_IDENTITY_URL` | Netlify site env + `.env` local | Netlify Identity |
-| `NETLIFY_GOOGLE_CLIENT_ID` | Netlify site env + `.env` local | Google Cloud OAuth |
-| `NETLIFY_GOOGLE_CLIENT_SECRET` | Netlify site env + `.env` local | Google Cloud OAuth |
+| `EXPO_PUBLIC_NETLIFY_SITE_ID` | `.env` local / Expo build | Netlify site |
+| `EXPO_PUBLIC_NETLIFY_IDENTITY_URL` | `.env` local / Expo build | Netlify Identity |
 | `S3_BUCKET` | Netlify site env + `.env` local | AWS S3 |
-| `S3_REGION` (default `us-east-1`) | Netlify site env + `.env` local | AWS S3 |
-| `AWS_ACCESS_KEY_ID` | Netlify site env + `.env` local | IAM S3 |
-| `AWS_SECRET_ACCESS_KEY` | Netlify site env + `.env` local | IAM S3 |
-| `SUPABASE_URL` | Netlify site env + `.env` local | Supabase (se for o provider) |
-| `SUPABASE_ANON_KEY` | Netlify site env + `.env` local | Supabase (se for o provider) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Netlify site env + `.env` local | Supabase (se for o provider) |
+| `S3_REGION` (`eu-west-3`) | Netlify site env + `.env` local | AWS S3 |
+| `S3_ACCESS_KEY_ID` | Netlify site env (secret) | IAM S3 |
+| `S3_SECRET_ACCESS_KEY` | Netlify site env (secret) | IAM S3 |
+| `DATABASE_URL` | Netlify site env (secret) | Neon pooled Postgres URL |
 
-> **Nota p/ Fase 1 (wiring no app Expo):** variáveis expostas ao cliente precisarão
-> de prefixo `EXPO_PUBLIC_` (Expo) em vez de `VITE_` — ajustar ao conectar o
-> tema/auth. `.env` e `.env.*` são ignorados no git; `.env.example` é o molde.
+> **Nota p/ Fase 1 (wiring no app Expo):** somente variáveis com prefixo
+> `EXPO_PUBLIC_` podem ir ao cliente. Nunca exponha `DATABASE_URL`, chaves S3
+> ou qualquer futuro segredo OAuth. `.env` e `.env.*` são ignorados no git;
+> `.env.example` é o molde.
 >
 > **Nota p/ BD:** se o provider escolhido for **Neon** (em vez de Supabase), trocar
 > as 3 variáveis `SUPABASE_*` por uma connection string (ex.: `DATABASE_URL`) e
@@ -194,35 +197,35 @@ Convenções a reutilizar (resumo do contrato):
 - **GitHub:** validar PAT e configurar `NODE_AUTH_TOKEN`.
 
 ### Credenciais a pedir ao dono (lista pronta)
-`NETLIFY_AUTH_TOKEN` · `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` ·
-credenciais do BD (3 keys Supabase OU connection string Neon/Postgres) · `NETLIFY_GOOGLE_CLIENT_ID`/`SECRET` ·
-`NODE_AUTH_TOKEN` (ou `gh auth token`).
+`NETLIFY_AUTH_TOKEN` · `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` ·
+connection string Neon/Postgres · `NODE_AUTH_TOKEN` (ou `gh auth token`).
+Clientes OAuth Google próprios só são necessários após upgrade do Identity Pro.
 
 ---
 
 ## 7. Ordem de execução (checklist)
 
-- [ ] 1. Codex decide o provider do BD e aplica a estrutura de referência (smart-library, §4.2.1).
-- [ ] 2. Netlify: criar site, conectar repo GitHub, setar `NODE_AUTH_TOKEN`, deploy.
-- [ ] 3. Validar smoke-test `/.netlify/functions/hello`.
-- [ ] 4. AWS: criar bucket privado + IAM + CORS/lifecycle; guardar credenciais.
-- [ ] 5. BD: criar projeto no provider escolhido + schema em `infra/database/` (estrutura smart-library); guardar credenciais.
-- [ ] 6. Google Cloud: OAuth client; guardar `CLIENT_ID`/`SECRET`.
-- [ ] 7. Netlify Identity: habilitar + provider Google; preencher as env vars restantes.
-- [ ] 8. Domínio custom: CNAME no Route53 (`painter-studio.thijulio.com`) → Netlify (§4.6).
-- [ ] 9. Documentar tudo em `memory.md` e commitar (Conventional Commits).
+- [x] 1. Codex decide o provider do BD e aplica a estrutura de referência (smart-library, §4.2.1).
+- [x] 2. Netlify: criar site, conectar repo GitHub, setar `NODE_AUTH_TOKEN`, deploy.
+- [x] 3. Validar smoke-test `/.netlify/functions/hello`.
+- [x] 4. AWS: criar bucket privado + IAM + CORS/lifecycle; guardar credenciais.
+- [x] 5. BD: criar projeto no provider escolhido + schema em `infra/database/` (estrutura smart-library); guardar credenciais.
+- [x] 6. Google Cloud: projeto e consentimento configurados; client próprio não é necessário no provider padrão.
+- [x] 7. Netlify Identity: habilitar + provider Google padrão; segredos permanecem fora do cliente.
+- [x] 8. Domínio custom: CNAME no Route53 (`painter-studio.thijulio.com`) → Netlify (§4.6), HTTPS Let’s Encrypt ativo.
+- [x] 9. Documentar tudo em `memory.md` e commitar (Conventional Commits).
 
 ---
 
 ## 8. Critérios de aceite (done when…)
 
-- [ ] Site web no ar em `https://<site>.netlify.app` com o app Expo renderizado.
-- [ ] `/.netlify/functions/hello` responde `200` `{ ok: true }`.
-- [ ] Bucket S3 criado (privado) e credencial IAM mínima funcionando.
-- [ ] BD criado com schema inicial versionado em `infra/database/`.
+- [x] Site web no ar em `https://painter-studio.netlify.app` com o app Expo renderizado.
+- [x] `/.netlify/functions/hello` responde `200` `{ ok: true }`.
+- [x] Bucket S3 criado (privado) e política IAM mínima configurada.
+- [x] BD criado com schema inicial versionado em `infra/database/`.
 - [ ] OAuth Google configurado e login Google funcional (Fase 1).
 - [ ] Todas as env vars da tabela §5 preenchidas (Netlify + `.env` local).
-- [ ] (Opcional) Domínio custom `painter-studio.thijulio.com` com SSL resolvendo para o site.
+- [x] (Opcional) Domínio custom `painter-studio.thijulio.com` com SSL resolvendo para o site.
 
 ---
 

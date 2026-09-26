@@ -2,21 +2,40 @@
 
 > Para retomar: leia isto + `AGENTS.md` + `docs/plan.md`.
 
-## 🚀 Handover — onde paramos
+## 🚀 Handover — infraestrutura provisionada (2026-09-26)
 
 - **Repo:** https://github.com/thijulio/painter-studio (privado, `main`, tudo commitado/pushado).
 - **Base pronta (Fase 0):** Nx 23 + Expo SDK 57 + design system Biome + AI Toolbox + tema (cores) conectado.
 - **Roda:** typecheck ✅ · build web ✅ · dev server ✅ (http://localhost:8081).
-- **PARADO em:** deploy no Netlify — **ação manual do dono** (sem acesso à conta Netlify).
-- **Deploy verificado (2026-09-20):** `gh auth token` lê o GitHub Packages (HTTP 200 p/ `@thijulio/biome-tokens`) → `NODE_AUTH_TOKEN` vai funcionar no build do Netlify. Comando do `netlify.toml` (`pnpm --filter @painter-studio/mobile build` → `expo export --platform web`) gera `apps/mobile/dist/index.html` corretamente. Único bloqueio real: acesso à conta Netlify (sem `netlify` CLI nem credenciais no ambiente).
+- **Netlify:** site `painter-studio` está conectado ao GitHub, com deploy de
+  produção em `https://painter-studio.netlify.app/`; `NODE_AUTH_TOKEN` e
+  `DATABASE_URL` estão como segredos. O smoke-test
+  `/.netlify/functions/hello` respondeu HTTP 200.
+- **Neon Postgres:** projeto `painter-studio` em London, usando conexão pooled
+  em `DATABASE_URL`. A migration `infra/database/migrations/0001_initial.sql`
+  foi aplicada e verificada (tabelas, `pg_trgm`, `pgcrypto` e trigger append-only).
+- **S3:** bucket privado em Paris (`eu-west-3`), CORS produção/local, lifecycle
+  de abort multipart em 7 dias e IAM mínimo de objeto. Netlify guarda
+  `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID` e `S3_SECRET_ACCESS_KEY`; as duas
+  últimas são segredos. Não há credenciais versionadas.
+- **Identity:** Netlify Identity está habilitado e o provider Google padrão está
+  ativo. A conta atual não permite OAuth Google próprio sem Identity Pro; por
+  isso não há Client ID/Secret no app. O projeto GCP `painter-studio-509817` e
+  a tela de consentimento existem, mas nenhum client OAuth foi criado.
+- **Domínio:** `painter-studio.thijulio.com` é o domínio primário do Netlify.
+  O CNAME Route 53 aponta para `painter-studio.netlify.app`, HTTPS Let’s Encrypt
+  está ativo e uma verificação HTTP 200 confirmou o endpoint.
+- **Pendente:** somente o wiring de Fase 1 no Expo (`@netlify/identity` e
+  `functions/storage`).
 
-## ⏭️ Próximo passo imediato (ação do dono)
+## ⏭️ Próximo passo imediato
 
-1. Netlify → "Add new site → Import an existing project" → GitHub → `thijulio/painter-studio`.
-2. *Site settings → Environment variables* → adicionar `NODE_AUTH_TOKEN` = saída de `gh auth token`.
-3. Deploy. Guia completo: `docs/deploy-netlify.md`.
-
-Depois: domínio custom `*.thijulio.com` (CNAME no Route53) → só então complexificar (Fase 1: auth Google + S3).
+1. Implementar a Fase 1: instalar `@netlify/identity`, chamar
+   `handleAuthCallback()` no boot e iniciar Google com `oauthLogin('google')`.
+2. Implementar `functions/storage` com URLs pré-assinadas e credenciais
+   `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` mapeadas explicitamente ao AWS SDK.
+3. Medir e acompanhar o uso real antes de considerar Identity Pro para branding
+   OAuth próprio.
 
 ## Estado atual
 

@@ -1,0 +1,12 @@
+[
+  {
+    "AllowedHeaders": ["content-type", "x-amz-*"],
+    "AllowedMethods": ["GET", "PUT"],
+    "AllowedOrigins": [
+      "https://painter-studio.netlify.app",
+      "http://localhost:8081"
+    ],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]

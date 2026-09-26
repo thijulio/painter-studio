@@ -16,7 +16,7 @@
                      │  inventory · mixing        │
                      └───┬──────────┬──────────┬──┘
                          │          │          │
-                   Netlify      AWS S3    Supabase
+                   Netlify      AWS S3    Neon Postgres
                    Identity    (imagens)  (Postgres)
 
    libs/  ──► shared/color-engine · shared/grid-engine · shared/types · shared/api-client · frontend/ui
@@ -41,7 +41,7 @@
 | `storage` | gera URL pré-assinada de upload/download no S3 |
 | `color-analysis` | extração de paleta (sharp) quando cliente não basta |
 | `grid` | gera PDF A4 (tiling) com a grelha em escala |
-| `inventory` | CRUD de tintas (Supabase) |
+| `inventory` | CRUD de tintas (Neon Postgres) |
 | `mixing` | receitas de mistura (delta-E + optimização) |
 
 ### libs/
@@ -55,7 +55,7 @@
 ### infra/
 - `s3/` — bucket (privado, com lifecycle), política de CORS.
 - `netlify/` — `netlify.toml`, redirects, variáveis de ambiente.
-- `database/` — schema Supabase + migrations.
+- `database/` — schema Neon Postgres + migrations.
 
 ## 3. Fluxos principais
 
@@ -67,7 +67,7 @@
 ### 3.2 Upload de imagem (S3)
 1. Cliente chama `functions/storage` → recebe **URL pré-assinada** (PUT).
 2. Cliente faz upload direto para o S3 (sem passar pelo servidor).
-3. Metadados (key, dono, dimensões) ficam no Supabase.
+3. Metadados (key, dono, dimensões) ficam no Neon Postgres.
 4. Download/leitura usa URL pré-assinada (GET) ou CloudFront se precisar de cache.
 
 ### 3.3 Análise de cor
@@ -82,7 +82,7 @@
 
 ### 3.5 Mistura de tintas
 1. Usuário seleciona uma cor-alvo (na roda ou na paleta da imagem).
-2. `mixing` lê o inventário (Supabase) e resolve a combinação que minimiza o delta-E contra o alvo.
+2. `mixing` lê o inventário (Neon Postgres) e resolve a combinação que minimiza o delta-E contra o alvo.
 3. Retorna receita: tintas + proporções aproximadas.
 
 ## 4. Modelo de dados (esboço)
@@ -101,7 +101,8 @@ CanvasSize(id, label, widthMm, heightMm, ratio)
 
 - ADR-001: Monorepo pnpm + Turborepo.
 - ADR-002: Expo como base única (mobile + web), PWA p/ desktop.
-- ADR-003: Netlify Identity (Google) + S3 + Supabase.
+- ADR-003: Netlify Identity (Google) + S3.
+- ADR-009: Neon Postgres via pooled connection for server-side persistence.
 - ADR-004: Lógica de cor/grelha em packages puros (testáveis).
 - ADR-005: Design system = Biome Modernism (tokens).
 - ADR-006: AI Toolbox = plugin governance-core.

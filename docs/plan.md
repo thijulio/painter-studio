@@ -21,7 +21,7 @@ Um assistente de pintura **simples**, **multi-plataforma** (Android, iOS, web/de
 - **Um codebase, várias plataformas**: Expo (mobile + web/desktop PWA).
 - **Lógica de cor/grelha em packages puros** (testáveis, sem UI) — `color-engine` e `grid-engine`.
 - **Backend mínimo**: só o que o cliente não pode fazer (assinatura S3, geração de PDF, persistência).
-- **Cloud-first**: imagens no S3, dados no Supabase → funciona igual em qualquer device.
+- **Cloud-first**: imagens no S3, dados no Neon Postgres → funciona igual em qualquer device.
 - **Design system**: visual via `@thijulio/biome-tokens` (Biome Modernism); nunca hardcode de cor.
 - **AI Toolbox**: plugin `@thijulio/governance-core` para revisão de governança (read-only).
 
@@ -62,7 +62,7 @@ Um assistente de pintura **simples**, **multi-plataforma** (Android, iOS, web/de
 | Grelha (grid) | `libs/shared/grid-engine` + tela `analyze` |
 | Tiling A4 → PDF | `functions/grid` (PDFKit) |
 | Roda de cores | `libs/shared/color-engine` + tela `color-wheel` |
-| Inventário | `functions/inventory` + Supabase + tela `inventory` |
+| Inventário | `functions/inventory` + Neon Postgres + tela `inventory` |
 | Misturas | `libs/shared/color-engine` (delta-E + optimização) + `functions/mixing` |
 | Auth | `functions/auth` (Netlify Identity) + `features/auth` |
 | Upload S3 | `functions/storage` (pré-assinado) + `features/analyze` |
@@ -71,7 +71,7 @@ Um assistente de pintura **simples**, **multi-plataforma** (Android, iOS, web/de
 
 - **Desktop nativo vs PWA**: PWA é o caminho simples; Electron só se precisar de acesso a arquivos/impressão local. **Decidir na Fase 6.**
 - **Extrair cor no cliente vs servidor**: cliente é grátis e instantâneo; servidor (sharp) é consistente e permite quantização melhor. **Híbrido** (cliente no MVP, servidor se precisar).
-- **Banco**: Supabase vs Netlify Blobs. Supabase dá relações (tinta → paleta → mistura). **Supabase.**
+- **Banco**: Neon Postgres dá as relações necessárias (tinta → paleta → mistura) e um pool adequado a Functions. **Neon.**
 - **Precisão da mistura**: mistura de tinta real é não-linear (pigmentos). O MVP entrega aproximação (modelo RGB/CMY + delta-E), com aviso de que é aproximação.
 - **Nome do projeto**: `painter-studio` é provisório.
 
